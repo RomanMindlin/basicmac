@@ -49,6 +49,7 @@ endif
     ALL		+= $(BUILDDIR)/$(PROJECT).hex
     ALL		+= $(BUILDDIR)/$(PROJECT).bin
     ALL		+= $(BUILDDIR)/$(PROJECT).zfw
+    ALL		+= $(BUILDDIR)/$(PROJECT).delta.up
     LOAD	 = loadhex
 endif
 

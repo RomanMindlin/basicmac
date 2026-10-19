@@ -39,6 +39,10 @@ CFLAGS		+= -I$(COMMONDIR)
 
 BUILDTIME	:= $(shell date -u +'%FT%TZ')
 
+# delta update: reference firmware (what is deployed) and signing key
+DELTA_REF	?= ref-$(VARIANT).zfw
+UPKEY		?= $(SVCSDIR)/fuota/testkey.pem
+
 PATCHFLAGS	+= $(addprefix --target=,$(HWID.$(VARIANT)))
 ifneq ($(RELEASE),)
 PATCHFLAGS	+= $(addprefix --version=,$(RELEASE))
@@ -137,6 +141,16 @@ $(BUILDDIR)/%.hex: $(BUILDDIR)/%.zfw
 $(BUILDDIR)/%.bin: $(BUILDDIR)/%.zfw
 	$(ZFWTOOL) export $< $@
 
+$(BUILDDIR)/%.delta.up: $(BUILDDIR)/%.zfw $(DELTA_REF)
+	$(ZFWTOOL) mkupdate -d $(DELTA_REF) -s $(UPKEY) $< $@
+
+# seed the reference from the first build; move it with "make setref" on deploy
+$(DELTA_REF): | $(BUILDDIR)/$(PROJECT).zfw
+	cp $| $@
+
+setref: $(BUILDDIR)/$(PROJECT).zfw
+	cp $< $(DELTA_REF)
+
 $(SVCDEFS_H): $(MAKE_DEPS) | $(BUILDDIRS)
 	$(SVCTOOL) svcdefs -o $@ -d $(SVCTOOLARGS)
 
@@ -157,7 +171,7 @@ debug: $(BUILDDIR)/$(PROJECT).out
 $(BUILDDIRS):
 	mkdir -p $@
 
-.PHONY: default all clean load loadhex loadbin loadfw loadup loadbl loadosbl debug variant variants
+.PHONY: default all clean load loadhex loadbin loadfw loadup loadbl loadosbl debug variant variants setref
 
 .SECONDARY:
 

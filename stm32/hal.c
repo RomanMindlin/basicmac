@@ -23,6 +23,10 @@
 #include "pwrman/pwrman.h"
 #endif
 
+#if defined(SVC_frag)
+#include "fuota/frag.h"
+#endif
+
 // HAL state
 static struct {
     s4_t irqlevel;
@@ -1044,6 +1048,18 @@ void hal_init (void* bootarg) {
 
 #ifdef CFG_DEBUG
     debug_init();
+#endif
+
+#if defined(SVC_frag)
+    // fragmentation session storage: free flash after firmware
+    // (must be set up before eefs_init, which restores sessions)
+    {
+        extern volatile hal_fwhdr fwhdr;
+        void* beg[1] = { (void*) (((uintptr_t) &fwhdr + fwhdr.boot.size
+                    + (FLASH_PAGE_SZ - 1)) & ~(FLASH_PAGE_SZ - 1)) };
+        void* end[1] = { (void*) FLASH_END };
+        _frag_init(1, beg, end);
+    }
 #endif
 
 #if defined(SVC_eefs)
