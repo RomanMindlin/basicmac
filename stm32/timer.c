@@ -86,6 +86,7 @@ void tmr_run (const void* p, uint32_t count, tmr_cb cb, bool once) {
 
     tmr->state->cb = cb;
 
+    tmr->timer->CR1 = TIM_CR1_URS;            // UG must not set UIF (it may land after SR is cleared)
     tmr->timer->CNT = 0;                      // reset counter
     tmr->timer->ARR = count;                  // set auto-reload register
     tmr->timer->EGR = TIM_EGR_UG;             // refresh registers
@@ -94,7 +95,7 @@ void tmr_run (const void* p, uint32_t count, tmr_cb cb, bool once) {
     tmr->timer->DIER = cb ? TIM_DIER_UIE : 0; // enable update interrupt
     NVIC_EnableIRQ(tmr->irqn);                // enable interrupt in NVIC
 
-    tmr->timer->CR1 = TIM_CR1_CEN
+    tmr->timer->CR1 = TIM_CR1_CEN | TIM_CR1_URS
         | (once ? TIM_CR1_OPM : 0 );          // enable timer
 }
 
@@ -112,6 +113,7 @@ uint32_t tmr_get (const void* p) {
 }
 
 static void tmr_irq (const tmr_p* tmr) {
+    tmr->timer->SR = 0;                       // acknowledge update interrupt
     if( tmr->state->cb ) {
         tmr->state->cb();
     }
